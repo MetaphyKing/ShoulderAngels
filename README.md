@@ -1,3 +1,9 @@
+<div align="center">
+  <img src="https://github.com/MetaphyKing/ShoulderAngels/blob/main/assest/webp/shoulderangels-hero-15fps.webp?raw=true" alt="ShoulderAngels" width="100%" style="max-width: 1200px;">
+</div>
+
+---
+
 # ShoulderAngels
 
 > **Two voices debate your coding path forward.**
