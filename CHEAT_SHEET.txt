@@ -1,0 +1,43 @@
+==============================================================================
+ ShoulderAngels — CHEAT SHEET
+ Two voices debate your coding path forward (safe vs. bold + forecast)
+==============================================================================
+
+SETUP
+  export ANTHROPIC_API_KEY=sk-ant-...        # required
+  export ANTHROPIC_MODEL=claude-haiku-4-5    # optional, default shown
+  pip install -e .                           # optional: installs `shoulderangels`
+
+ONE-LINERS
+  shoulderangels "Add caching to the user service"          # interactive (TTY)
+  shoulderangels "Migrate to async" --choose bold --json    # pipeline-friendly
+  shoulderangels "Refactor auth" --choose both --json       # forecast both paths
+  shoulderangels task.md --choose safe                      # read task from file
+  echo '...' | shoulderangels "Speed up build" --choose safe# never blocks on pipe
+  shoulderangels --history                                  # list past decisions
+  shoulderangels --history --json                           # full history as JSON
+
+FLAGS
+  target              task string, or a path to a file describing the task
+  --choose X          safe | bold | both   (skips the interactive prompt)
+  --json              emit structured JSON
+  --model ID          override the model (default: $ANTHROPIC_MODEL or claude-haiku-4-5)
+  --max-tokens N      cap tokens per call (default 1024)
+  --no-store          do not append this decision to history
+  --history           print decision history and exit
+  --version           print version
+
+BEHAVIOR NOTES
+  • Interactive prompt appears ONLY on a real TTY with no --choose given.
+  • In pipes/CI with no --choose, it defaults to "safe" and never hangs.
+  • History is stored at:  ~/.shoulderangels/history.json
+  • All model output is JSON-validated; malformed responses degrade gracefully.
+
+EXIT CODES
+  0  success
+  1  LLM/key/network error (message on stderr)
+  2  bad CLI usage (argparse)
+
+TEST
+  pytest -q            # 22 offline tests, LLM mocked, no API cost
+==============================================================================

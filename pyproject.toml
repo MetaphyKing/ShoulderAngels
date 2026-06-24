@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "shoulderangels"
+version = "1.0.0"
+description = "Two voices debate your coding path forward — safe vs. bold dev strategies with outcome forecasting."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "NICHE / Team Brain (Logan Smith, Metaphy LLC)" }]
+keywords = ["llm", "anthropic", "claude", "decision", "strategy", "cli", "agent"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Software Development :: Build Tools",
+]
+# Runtime is stdlib-only by design. No install_requires.
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[project.urls]
+Homepage = "https://github.com/MetaphyKing/ShoulderAngels"
+Issues = "https://github.com/MetaphyKing/ShoulderAngels/issues"
+
+[project.scripts]
+shoulderangels = "shoulderangels:main"
+
+[tool.setuptools]
+py-modules = ["shoulderangels"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
