@@ -4,8 +4,14 @@
 ==============================================================================
 
 SETUP
-  export ANTHROPIC_API_KEY=sk-ant-...        # required
+  # Anthropic (default backend) — key required only on this path:
+  export ANTHROPIC_API_KEY=sk-ant-...
   export ANTHROPIC_MODEL=claude-haiku-4-5    # optional, default shown
+
+  # Agent / Grok host — no Anthropic key:
+  export SHOULDERANGELS_BACKEND=command
+  export SHOULDERANGELS_COMPLETE_CMD='python examples/fake_completer.py'
+
   pip install -e .                           # optional: installs `shoulderangels`
 
 ONE-LINERS
@@ -16,13 +22,17 @@ ONE-LINERS
   echo '...' | shoulderangels "Speed up build" --choose safe# never blocks on pipe
   shoulderangels --history                                  # list past decisions
   shoulderangels --history --json                           # full history as JSON
+  shoulderangels "task" --choose safe --json \
+    --backend command --complete-cmd "python examples/fake_completer.py"
 
 FLAGS
   target              task string, or a path to a file describing the task
   --choose X          safe | bold | both   (skips the interactive prompt)
   --json              emit structured JSON
-  --model ID          override the model (default: $ANTHROPIC_MODEL or claude-haiku-4-5)
-  --max-tokens N      cap tokens per call (default 1024)
+  --model ID          Anthropic model (default: $ANTHROPIC_MODEL or claude-haiku-4-5)
+  --max-tokens N      cap tokens per Anthropic call (default 1024)
+  --backend X         anthropic | command   (default: $SHOULDERANGELS_BACKEND or anthropic)
+  --complete-cmd CMD  required for --backend command (or $SHOULDERANGELS_COMPLETE_CMD)
   --no-store          do not append this decision to history
   --history           print decision history and exit
   --version           print version
@@ -32,12 +42,14 @@ BEHAVIOR NOTES
   • In pipes/CI with no --choose, it defaults to "safe" and never hangs.
   • History is stored at:  ~/.shoulderangels/history.json
   • All model output is JSON-validated; malformed responses degrade gracefully.
+  • Agent backend = host LLM supplies complete(); Anthropic is optional.
+  • Command completer: stdin {"prompt","system"} → stdout {"text":...} or raw.
 
 EXIT CODES
   0  success
-  1  LLM/key/network error (message on stderr)
+  1  LLM/key/network/command error (message on stderr)
   2  bad CLI usage (argparse)
 
 TEST
-  pytest -q            # 22 offline tests, LLM mocked, no API cost
+  pytest -q            # 40 offline tests, LLM mocked, no API cost
 ==============================================================================
