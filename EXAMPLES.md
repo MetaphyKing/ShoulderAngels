@@ -1,7 +1,8 @@
 # ShoulderAngels — Examples
 
-Worked, copy-pasteable examples. Each assumes `ANTHROPIC_API_KEY` is exported.
-Unit tests mock the model (no cost); the examples below make **real** calls.
+Worked, copy-pasteable examples. Anthropic examples assume `ANTHROPIC_API_KEY`
+is exported. The command-backend example needs no key. Unit tests mock the
+model (no cost); Anthropic examples below make **real** calls.
 
 ---
 
@@ -121,7 +122,31 @@ assert tool.propose("anything")["safe"]["description"] == "x"
 
 ---
 
-## 6. Decision history
+## 6. Agent / command backend (no Anthropic key)
+
+The host LLM supplies `complete`; this tool still validates, chooses, forecasts,
+and records. Offline demo:
+
+```bash
+shoulderangels "Add rate limiting" --choose safe --json \
+  --backend command \
+  --complete-cmd "python examples/fake_completer.py"
+```
+
+In-process host (Grok Bot, a subagent, any generate function):
+
+```python
+from shoulderangels import ShoulderAngels, CallableClient
+
+tool = ShoulderAngels(client=CallableClient(host_complete))
+result = tool.run("Introduce feature flags", choice="safe")
+# already have a finished dict? persist without another propose:
+tool.record(result)
+```
+
+---
+
+## 7. Decision history
 
 Every non-`--no-store` run is appended to `~/.shoulderangels/history.json`.
 
@@ -137,7 +162,7 @@ shoulderangels --history --json | jq '.[].chosen_path'
 
 ---
 
-## 7. Override model / token budget
+## 8. Override model / token budget
 
 ```bash
 shoulderangels "Design a plugin system" \
@@ -152,7 +177,7 @@ shoulderangels "Design a plugin system" \
 
 | Situation                  | What happens                                            |
 |----------------------------|---------------------------------------------------------|
-| `ANTHROPIC_API_KEY` unset  | exits 1 with a clear "export your key" message          |
+| `ANTHROPIC_API_KEY` unset  | Anthropic backend: exits 1. Command backend: not needed. |
 | Network down / timeout     | retries with backoff, then exits 1 with the reason      |
 | 429 / 5xx from the API     | retried up to 3× with backoff                           |
 | Model returns non-JSON     | gracefully normalized; you still get safe/bold objects  |
