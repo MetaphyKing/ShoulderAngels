@@ -19,6 +19,7 @@ Runtime dependencies: the Python standard library only.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -33,7 +34,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 
 # The embedded reasoning model. Override per-call with --model or the
 # ANTHROPIC_MODEL environment variable.
@@ -338,7 +339,7 @@ class ShoulderAngels:
         ``chooser`` is supplied, it is asked interactively. With neither, the
         decision defaults to 'safe' (pipeline-friendly, never blocks).
         """
-        target = self._coerce_target(target)
+        target, subject = self._bind_subject(target)
         strategies = self.propose(target)
 
         if choice is None and chooser is not None:
@@ -364,25 +365,59 @@ class ShoulderAngels:
             "safe_risk": strategies["safe"].get("risk", "low"),
             "bold_upside": strategies["bold"].get("upside", "high"),
             "timestamp": datetime.now(timezone.utc).isoformat(),
+            **subject,
         }
         if store:
             self._record(result)
         return result
 
     @staticmethod
-    def _coerce_target(target: Any) -> str:
-        """Accept a plain string, a JSON object/dict, or a file path."""
+    def _digest(raw: bytes) -> dict[str, Any]:
+        h = hashlib.sha256(raw).hexdigest()
+        return {
+            "subject_size": len(raw),
+            "subject_sha256": h,
+            "subject_sha16": h[:16],
+        }
+
+    @staticmethod
+    def _bind_subject(target: Any) -> tuple[str, dict[str, Any]]:
+        """Resolve *target* to prompt text AND a digest of the bytes fed.
+
+        File paths: hash the file bytes as they sit on disk (never the
+        stripped text the model sees). Plain strings and dicts: hash
+        UTF-8 of the text that will be proposed on. Size is always
+        bytes, never a character count.
+        """
+        meta: dict[str, Any] = {"subject_kind": "text"}
         if isinstance(target, dict):
-            return target.get("task") or target.get("target") or json.dumps(target)
+            text = target.get("task") or target.get("target") or json.dumps(target)
+            meta.update(ShoulderAngels._digest(text.encode("utf-8")))
+            return text, meta
         if isinstance(target, str):
             candidate = Path(target)
             try:
                 if candidate.is_file():
-                    return candidate.read_text(encoding="utf-8").strip()
+                    raw = candidate.read_bytes()
+                    meta = {
+                        "subject_kind": "file",
+                        "subject_path": str(candidate.resolve()),
+                        **ShoulderAngels._digest(raw),
+                    }
+                    return raw.decode("utf-8").strip(), meta
             except OSError:
                 pass
-            return target
-        return str(target)
+            meta.update(ShoulderAngels._digest(target.encode("utf-8")))
+            return target, meta
+        text = str(target)
+        meta.update(ShoulderAngels._digest(text.encode("utf-8")))
+        return text, meta
+
+    @staticmethod
+    def _coerce_target(target: Any) -> str:
+        """Accept a plain string, a JSON object/dict, or a file path."""
+        text, _ = ShoulderAngels._bind_subject(target)
+        return text
 
     # -- history persistence ------------------------------------------------ #
     def record(self, result: dict[str, Any]) -> None:

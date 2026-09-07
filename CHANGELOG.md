@@ -4,6 +4,16 @@ All notable changes to ShoulderAngels are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is
 [SemVer](https://semver.org/).
 
+## [1.1.1] — 2026-09-07
+
+### Added
+- Every `run()` result now carries `subject_size` (bytes), `subject_sha256`,
+  `subject_sha16`, and `subject_kind` (`file` or `text`). File targets also
+  carry `subject_path`. The digest is taken at the moment the subject is fed:
+  **file bytes on disk**, never the stripped text the model sees, never a
+  character count. Closes the SA2 subject-gap (Iris 2026-09-07: a report that
+  names size only cannot be bound to any file that exists).
+
 ## [1.1.0] — 2026-09-06
 
 Pluggable completion backends so the tool can run without Anthropic. Schema
