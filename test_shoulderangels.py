@@ -6,6 +6,7 @@ EXAMPLES.md / `python shoulderangels.py "..." --json`).
 """
 from __future__ import annotations
 
+import hashlib
 import inspect
 import json
 import sys
@@ -133,6 +134,33 @@ def test_coerce_target_reads_file(tmp_path):
 
 def test_coerce_target_accepts_dict():
     assert ShoulderAngels._coerce_target({"task": "do x"}) == "do x"
+
+
+def test_run_file_subject_digest_is_file_bytes_not_stripped_text(tmp_path):
+    """SA2 gap: size+sha must be of the file bytes, never the stripped prompt."""
+    f = tmp_path / "task.md"
+    raw = b"build the thing\n\n"
+    f.write_bytes(raw)
+    digest = hashlib.sha256(raw).hexdigest()
+    tool = make_tool(tmp_path, [SAFE_BOLD, "outcome"])
+    result = tool.run(str(f), choice="safe", store=False)
+    assert result["target"] == "build the thing"
+    assert result["subject_kind"] == "file"
+    assert result["subject_size"] == len(raw)
+    assert result["subject_sha256"] == digest
+    assert result["subject_sha16"] == digest[:16]
+    assert result["subject_path"].endswith("task.md")
+
+
+def test_run_text_subject_digest_is_utf8_bytes(tmp_path):
+    text = "plain task"
+    digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
+    tool = make_tool(tmp_path, [SAFE_BOLD, "outcome"])
+    result = tool.run(text, choice="safe", store=False)
+    assert result["subject_kind"] == "text"
+    assert result["subject_size"] == len(text.encode("utf-8"))
+    assert result["subject_sha256"] == digest
+    assert "subject_path" not in result
 
 
 # -- history persistence ---------------------------------------------------- #
